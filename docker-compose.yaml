@@ -1,0 +1,39 @@
+version: '3.4'
+
+services:
+  haproxy:
+    image: haproxy:2.2
+    container_name: haproxy
+    restart: unless-stopped
+    hostname: haproxy
+    volumes:
+      - ./etc/haproxy/:/usr/local/etc/haproxy/:ro
+    networks:
+      clamav_network:
+        aliases:
+        - haproxy
+    ports:
+      - "127.0.0.1:3310:3310"
+      - "127.0.0.1:8080:8080"
+
+  clamd:
+    image: jloehel/clamav:latest
+    restart: unless-stopped
+    volumes:
+      - clamav_data:/data:Z
+    networks:
+      clamav_network:
+        aliases:
+        - clamd
+    healthcheck:
+      test: ["CMD-SHELL", "echo PING | nc 127.0.0.1 3310 | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  clamav_data:
+    driver: local
+
+networks:
+  clamav_network:
